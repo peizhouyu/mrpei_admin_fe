@@ -1,175 +1,143 @@
-'use strict';
+/*
+* @Author: Rosen
+* @Date:   2018-01-31 13:10:47
+* @Last Modified by:   Rosen
+* @Last Modified time: 2018-02-01 16:30:04
+*/
 import React        from 'react';
-import ReactDOM     from 'react-dom';
-import { Link }     from 'react-router';
+import { Link }     from 'react-router-dom';
+import MUtil        from 'util/mm.jsx'
+import Product      from 'service/product-service.jsx'
 
 import PageTitle    from 'component/page-title/index.jsx';
-import Pagination   from 'component/pagination/index.jsx';
-
-import MMUtile      from 'util/mm.jsx';
-import Product      from 'service/product.jsx';
-
-const _mm = new MMUtile();
-const _product = new Product();
+import ListSearch   from './index-list-search.jsx';
+import TableList    from 'util/table-list/index.jsx';
+import Pagination   from 'util/pagination/index.jsx';
 
 import './index.scss';
 
-const ProductList = React.createClass({
-    getInitialState() {
-        return {
+const _mm           = new MUtil();
+const _product      = new Product();
+
+class ProductList extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
             list            : [],
-            listType        : 'list', // list / search
-            searchType      : 'productId', // productId / productName
-            searchKeyword   : '',
-            pageNum         : 1
+            pageNum         : 1,
+            listType        : 'list'
         };
-    },
+    }
     componentDidMount(){
-       this.loadProductList();
-    },
-    // 加载产品列表
-    loadProductList(pageNum){
-        let listParam       = {},
-            listType        = this.state.listType,
-            searchType      = this.state.searchType;
-            
-        listParam.listType  = listType;
-        listParam.pageNum   = pageNum || this.state.pageNum;
-        // 按商品名搜索
-        if(listType == 'search' && searchType == "productName"){
-            listParam.productName = this.state.searchKeyword;
+        this.loadProductList();
+    }
+    // 加载商品列表
+    loadProductList(){
+        let listParam = {};
+        listParam.listType = this.state.listType;
+        listParam.pageNum  = this.state.pageNum;
+        // 如果是搜索的话，需要传入搜索类型和搜索关键字
+        if(this.state.listType === 'search'){
+            listParam.searchType = this.state.searchType;
+            listParam.keyword    = this.state.searchKeyword;
         }
-        // 按商品id搜索
-        if(listType == 'search' && searchType == "productId"){
-            listParam.productId = this.state.searchKeyword;
-        }
-        // 查询
+        // 请求接口
         _product.getProductList(listParam).then(res => {
-            console.log(res)
             this.setState(res);
-        }, err => {
-            _mm.errorTips(err.msg || err.statusText);
+        }, errMsg => {
+            this.setState({
+                list : []
+            });
+            _mm.errorTips(errMsg);
         });
-    },
-    // 搜索类型变化
-    onSearchTypeChange(e){
-        let searchType = e.target.value;
-        this.setState({
-            searchType : searchType
-        });
-    },
-    // 关键词变化
-    onKeywordChange(e){
-        let keyword = e.target.value;
-        this.setState({
-            searchKeyword : keyword
-        });
-    },
+    }
     // 搜索
-    onSearch(){
+    onSearch(searchType, searchKeyword){
+        let listType = searchKeyword === '' ? 'list' : 'search';
         this.setState({
-            listType    : 'search'
+            listType        : listType,
+            pageNum         : 1,
+            searchType      : searchType,
+            searchKeyword   : searchKeyword
         }, () => {
-            this.loadProductList(1);
+            this.loadProductList();
         });
-    },
-    // 页数变化
+    }
+    // 页数发生变化的时候
     onPageNumChange(pageNum){
-        this.loadProductList(pageNum);
-    },
-    setProductStatus(productId, status){
-        let currentStatus   = status,
-            newStatus       = currentStatus == 1 ? 2 : 1,
-            statusChangeTips= currentStatus == 1 ? '确认要下架该商品？' : '确认要上架该商品？';
-        if(window.confirm(statusChangeTips)){
-            _product.setProductStatus(productId, newStatus).then(res => {
-                // 操作成功提示
+        this.setState({
+            pageNum : pageNum
+        }, () => {
+            this.loadProductList();
+        });
+    }
+    // 改变商品状态，上架 / 下架
+    onSetProductStatus(e, productId, currentStatus){
+        let newStatus   = currentStatus == 1 ? 2 : 1,
+            confrimTips = currentStatus == 1 
+                ? '确定要下架该商品？' : '确定要上架该商品？';
+        if(window.confirm(confrimTips)){
+            _product.setProductStatus({
+                productId: productId,
+                status: newStatus
+            }).then(res => {
                 _mm.successTips(res);
                 this.loadProductList();
-            }, err => {
-                _mm.errorTips(err.msg);
+            }, errMsg => {
+                _mm.errorTips(res);
             });
         }
-    },
-    render() {
-        
+    }
+    render(){
+        let tableHeads = [
+            {name: '商品ID', width: '10%'},
+            {name: '商品信息', width: '50%'},
+            {name: '价格', width: '10%'},
+            {name: '状态', width: '15%'},
+            {name: '操作', width: '15%'},
+        ];
         return (
             <div id="page-wrapper">
-                <PageTitle pageTitle="商品管理">
+                <PageTitle title="商品列表">
                     <div className="page-header-right">
-                        <Link className="btn btn-primary" to="/product/save"><i className="fa fa-plus fa-fw"></i>添加商品</Link>
+                        <Link to="/product/save" className="btn btn-primary">
+                            <i className="fa fa-plus"></i>
+                            <span>添加商品</span>
+                        </Link>
                     </div>
                 </PageTitle>
-                <div className="row">
-                    <div className="search-wrap col-md-12">
-                        <div className="form-inline">
-                            <div className="form-group">
-                                <select className="form-control" onChange={this.onSearchTypeChange}>
-                                    <option value="productId">按商品id查询</option>
-                                    <option value="productName">按商品名称查询</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <input type="text" className="form-control" placeholder="关键词" onChange={this.onKeywordChange}/>
-                            </div>
-                            <button type="button" className="btn btn-default" onClick={this.onSearch}>查询</button>
-                        </div>
-                    </div>
-                    <div className="table-wrap col-lg-12">
-                        <table className="table table-striped table-bordered table-hover">
-                            <thead>
-                                <tr>
-                                    <th>id</th>
-                                    <th>信息</th>
-                                    <th>价格</th>
-                                    <th>状态</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {
-                                    this.state.list.length ? this.state.list.map((product, index) => {
-                                        return (
-                                            <tr key={index}>
-                                                <td>{product.id}</td>
-                                                <td>
-                                                    <p>{product.name}</p>
-                                                    <p>{product.subtitle}</p>
-                                                </td>
-                                                <td>{product.price}</td>
-                                                <td>
-                                                    <span>{product.status == 1 ? '在售' : '已下架'}</span>
-                                                    <a className="btn btn-xs btn-warning opear" 
-                                                        data-status={product.status} 
-                                                        onClick={this.setProductStatus.bind(this, product.id, product.status)}>{product.status == 1 ? '下架' : '上架'}</a>
-                                                </td>
-                                                <td>
-                                                    <Link className="opear" to={ '/product/detail/' + product.id}>查看</Link>
-                                                    <Link className="opear"  to={ '/product/save/' + product.id}>编辑</Link>
-                                                </td>
-                                            </tr>
-                                        );
-                                    }) :
-                                    (
-                                        <tr>
-                                            <td colSpan="5" className="text-center">暂无结果~</td>
-                                        </tr>
-                                    )
-                                }
-                                            
-                            </tbody>
-                        </table>
-                    </div>
+                <ListSearch onSearch={(searchType, searchKeyword) => {this.onSearch(searchType, searchKeyword)}}/>
+                <TableList tableHeads={tableHeads}>
                     {
-                    this.state.pages > 1 ? <Pagination onChange={this.onPageNumChange} 
-                        current={this.state.pageNum} 
-                        total={this.state.total} 
-                        showLessItems/>: null
+                        this.state.list.map((product, index) => {
+                            return (
+                                <tr key={index}>
+                                    <td>{product.id}</td>
+                                    <td>
+                                        <p>{product.name}</p>
+                                        <p>{product.subtitle}</p>
+                                    </td>
+                                    <td>￥{product.price}</td>
+                                    <td>
+                                        <p>{product.status == 1 ? '在售' : '已下架'}</p>
+                                        <button className="btn btn-xs btn-warning" 
+                                            onClick={(e) => {this.onSetProductStatus(e, product.id, product.status)}}>{product.status == 1 ? '下架' : '上架'}</button>
+                                    </td>
+                                    <td>
+                                        <Link className="opear" to={ `/product/detail/${product.id}` }>详情</Link>
+                                        <Link className="opear" to={ `/product/save/${product.id}` }>编辑</Link>
+                                    </td>
+                                </tr>
+                            );
+                        })
                     }
-                </div>
+                </TableList>
+                <Pagination current={this.state.pageNum} 
+                    total={this.state.total} 
+                    onChange={(pageNum) => this.onPageNumChange(pageNum)}/>
             </div>
         );
     }
-});
+}
 
 export default ProductList;

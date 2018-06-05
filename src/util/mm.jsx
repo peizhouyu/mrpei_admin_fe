@@ -1,90 +1,80 @@
+/*
+* @Author: Rosen
+* @Date:   2018-01-23 22:54:28
+* @Last Modified by:   Rosen
+* @Last Modified time: 2018-01-31 14:21:22
+*/
 
-
-'use strict';
-
-const conf = {
-    // online
-    // serverHost: 'https://admin.mrpeimall.top/'
-    // dev
-    serverHost: '',
-    imageHost: 'http://image.mrpei.cn/',
-}
-
-class MMUtil{
-    // 请求服务器
+class MUtil{
     request(param){
         return new Promise((resolve, reject) => {
             $.ajax({
-                type       : param.method   || 'get',
-                url        : param.url      || '',
-                dataType   : param.type     || "json",
-                data       : param.data     || null,
-                success    : res => {
-                    // 数据成功
+                type        : param.type        || 'get',
+                url         : param.url         || '',
+                dataType    : param.dataType    || 'json',
+                data        : param.data        || null,
+                success     : res => {
+                    // 数据请求成功
                     if(0 === res.status){
-                        typeof resolve === 'function' && resolve(res.data || res.msg);
+                        typeof resolve === 'function' && resolve(res.data, res.msg);
                     }
-                    // 没登录状态, 且强制登录, 自动跳转到登录页
-                    else if(res.status === 10){
+                    // 没有登录状态，强制登录
+                    else if(10 === res.status){
                         this.doLogin();
                     }
-                    // 其他状态，调用error
                     else{
                         typeof reject === 'function' && reject(res.msg || res.data);
                     }
                 },
-                error: err => {
+                error       : err => {
                     typeof reject === 'function' && reject(err.statusText);
                 }
             });
-        });
+        });  
     }
-    // 获取请求url地址
-    getServerUrl(path){
-        return conf.serverHost + path;
+    // 跳转登录
+    doLogin(){
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
-    // 获取图片地址
-    getImageUrl(path){
-        return conf.imageHost + path;
-    }
-    // 获取url参数
-    getHashParam(name){
-        var reg         = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"),
-            queryString = window.location.hash.split('?')[1] || '',
+    // 获取URL参数
+    getUrlParam(name){
+        // param=123&param1=456
+        let queryString = window.location.search.split('?')[1] || '',
+            reg         = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"),
             result      = queryString.match(reg);
         return result ? decodeURIComponent(result[2]) : null;
     }
-    // alert
-    successTips(msg){
-        alert(msg || '操作成功');
+    // 成功提示
+    successTips(successMsg){
+        alert(successMsg || '操作成功！');
     }
-    // alert
-    errorTips(msg){
-        alert(msg || '哪里不对了~');
+    // 错误提示
+    errorTips(errMsg){
+        alert(errMsg || '好像哪里不对了~');
     }
-    // 向本地存储里放数据
+    // 本地存储
     setStorage(name, data){
-        // array / json
-        if(typeof data === 'object'){
-            let jsonString = JSON.stringify(data);
-            window.localStorage.setItem(name, jsonString);
+        let dataType = typeof data;
+        // json对象
+        if(dataType === 'object'){
+            window.localStorage.setItem(name, JSON.stringify(data));
         }
-        // number / string / boolean
-        else if(typeof data === 'number' || typeof data === 'string' || typeof data === 'boolean'){
-            window.localStorage.setItem(name, jsonString);
+        // 基础类型
+        else if(['number','string','boolean'].indexOf(dataType) >= 0){
+            window.localStorage.setItem(name, data);
         }
-        // undefined / function
+        // 其他不支持的类型
         else{
-            alert('该数据类型不能用于本地存储');
+            alert('该类型不能用于本地存储');
         }
     }
-    // 从本地存储获取数据
+    // 取出本地存储内容
     getStorage(name){
         let data = window.localStorage.getItem(name);
         if(data){
-            // JSON.parse
             return JSON.parse(data);
-        }else{
+        }
+        else{
             return '';
         }
     }
@@ -92,9 +82,6 @@ class MMUtil{
     removeStorage(name){
         window.localStorage.removeItem(name);
     }
-    // 跳转登录
-    doLogin(){
-        window.location.href = '#/login?redirect=' + encodeURIComponent(window.location.hash);
-    }
 }
-export default MMUtil;
+
+export default MUtil;

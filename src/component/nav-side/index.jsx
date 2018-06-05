@@ -1,67 +1,73 @@
-'use strict';
-import React from 'react';
-import ReactDOM from 'react-dom';
+/*
+* @Author: Rosen
+* @Date:   2018-01-23 20:00:02
+* @Last Modified by:   Rosen
+* @Last Modified time: 2018-01-26 13:43:14
+*/
+import React                from 'react';
+import { Link, NavLink }    from 'react-router-dom';
 
-import { Link, IndexLink } from 'react-router';
-
-const SideNav = React.createClass({
-    getInitialState() {
-        return {
-            
-        };
-    },
-    componentDidMount(){
-
-    },
-    render() {
+class NavSide extends React.Component{
+    constructor(props){
+        super(props);
+    }
+    render(){
         return (
-            <div className="navbar-default sidebar" role="navigation">
-                <div className="sidebar-nav navbar-collapse">
-                    <ul className="nav" id="side-menu">
+            <div className="navbar-default navbar-side">
+                <div className="sidebar-collapse">
+                    <ul className="nav">
                         <li>
-                            <IndexLink to="/home" activeClassName="active">
-                                <i className="fa fa-dashboard fa-fw"></i>
-                                <span>Home</span>
-                            </IndexLink>
+                            <NavLink exact activeClassName="active-menu" to="/">
+                                <i className="fa fa-dashboard"></i>
+                                <span>首页</span>
+                            </NavLink>
                         </li>
-                        <li>
-                            <Link>
-                                <i className="fa fa-bar-chart-o fa-fw"></i>
+                        <li className="active">
+                            <Link to="/product">
+                                <i className="fa fa-list"></i>
                                 <span>商品</span>
+                                <span className="fa arrow"></span>
                             </Link>
                             <ul className="nav nav-second-level collapse in">
                                 <li>
-                                    <Link to="/product" activeClassName="active">商品管理</Link>
+                                    <NavLink to="/product" activeClassName="active-menu">商品管理</NavLink>
                                 </li>
                                 <li>
-                                    <Link to="/product.category" activeClassName="active">品类管理</Link>
+                                    <NavLink to="/product-category" activeClassName="active-menu">品类管理</NavLink>
                                 </li>
                             </ul>
                         </li>
-                        <li>
-                            <Link>
-                                <i className="fa fa-wrench fa-fw"></i>
+                        <li className="active">
+                            <Link to="/order">
+                                <i className="fa fa-check-square-o"></i>
                                 <span>订单</span>
+                                <span className="fa arrow"></span>
                             </Link>
                             <ul className="nav nav-second-level collapse in">
                                 <li>
-                                    <Link to="/order" activeClassName="active">订单管理</Link>
+                                    <NavLink to="/order" activeClassName="active-menu">订单管理</NavLink>
                                 </li>
                             </ul>
                         </li>
-                        {/*
-                        <li>
+                        <li className="active">
                             <Link to="/user">
-                                <i className="fa fa-user-o fa-fw"></i>
+                                <i className="fa fa-user-o"></i>
                                 <span>用户</span>
+                                <span className="fa arrow"></span>
                             </Link>
+                            <ul className="nav nav-second-level collapse in">
+                                <li>
+                                    <NavLink to="/user" activeClassName="active-menu">用户管理</NavLink>
+                                </li>
+                            </ul>
                         </li>
-                        */}
                     </ul>
+
                 </div>
+
             </div>
         );
     }
-});
+}
 
-export default SideNav;
+export default NavSide;

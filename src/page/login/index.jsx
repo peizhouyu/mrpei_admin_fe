@@ -1,84 +1,97 @@
-'use strict';
-import React from 'react';
-import ReactDOM from 'react-dom';
+/*
+* @Author: Rosen
+* @Date:   2018-01-25 17:37:22
+* @Last Modified by:   Rosen
+* @Last Modified time: 2018-01-26 12:29:31
+*/
+import React        from 'react';
+import MUtil        from 'util/mm.jsx'
+import User         from 'service/user-service.jsx'
 
-import MMUtile from 'util/mm.jsx';
-import User from 'service/user.jsx';
+const _mm   = new MUtil();
+const _user = new User();
 
-const _mm    = new MMUtile();
-const _user  = new User();
+import './index.scss';
 
-const Login = React.createClass({
-    getInitialState() {
-        return {
-            username : '',
-            password : '',
-            redirect : _mm.getHashParam('redirect')
-        };
-    },
-    // 点击登录
-    onLogin(e){
-        e.preventDefault();
-        let loginInfo   = {
-                username: this.state.username,
-                password: this.state.password
-            },
-            checkLogin  = _user.checkLoginInfo(loginInfo);
-        if(checkLogin.state){
-            // 登录成功后进行跳转
-            _user.login(loginInfo).then(res => {
-                _mm.setStorage('userInfo', res);
-                window.location.href = this.state.redirect || '#/home';
-            }, errMsg => {
-                _mm.errorTips(errMsg);
-            });
-        }else{
-            _mm.errorTips(checkLogin.msg);
+class Login extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            username: '',
+            password: '',
+            redirect: _mm.getUrlParam('redirect') || '/'
         }
-    },
-    // 输入框内容变化时，更新state中的字段
+    }
+    componentWillMount(){
+        document.title = '登录 - MMALL ADMIN';
+    }
+    // 当用户名发生改变
     onInputChange(e){
-        let ele         = e.target,
-            inputValue  = e.target.value,
+        let inputValue  = e.target.value,
             inputName   = e.target.name;
         this.setState({
             [inputName] : inputValue
         });
-    },
-    render() {
+    }
+    onInputKeyUp(e){
+        if(e.keyCode === 13){
+            this.onSubmit();
+        }
+    }
+    // 当用户提交表单
+    onSubmit(){
+        let loginInfo = {
+                username : this.state.username,
+                password : this.state.password
+            },
+            checkResult = _user.checkLoginInfo(loginInfo);
+        // 验证通过
+        if(checkResult.status){
+            _user.login(loginInfo).then((res) => {
+                _mm.setStorage('userInfo', res);
+                this.props.history.push(this.state.redirect);
+            }, (errMsg) => {
+                _mm.errorTips(errMsg);
+            });
+        }
+        // 验证不通过
+        else{
+            _mm.errorTips(checkResult.msg);
+        }
+            
+    }
+    render(){
         return (
-            <div className="row">
-                <div className="col-md-4 col-md-offset-4">
-                    <div className="login-panel panel panel-default">
-                        <div className="panel-heading">
-                            <h3 className="panel-title">请登录</h3>
-                        </div>
-                        <div className="panel-body">
-                            <form role="form" onSubmit={this.onLogin}>
-                                <div className="form-group">
-                                    <input className="form-control" 
-                                        placeholder="User Name" 
-                                        name="username" 
-                                        type="text" 
-                                        autoComplete="off" 
-                                        autoFocus 
-                                        onChange={this.onInputChange}/>
-                                </div>
-                                <div className="form-group">
-                                    <input className="form-control" 
-                                        placeholder="Password" 
-                                        name="password" 
-                                        type="password" 
-                                        onChange={this.onInputChange}/>
-                                </div>
-                                <button type="submit" className="btn btn-lg btn-primary btn-block">Login</button>
-                            </form>
+            <div className="col-md-4 col-md-offset-4">
+                <div className="panel panel-default login-panel">
+                    <div className="panel-heading">欢迎登录 - MMALL管理系统</div>
+                    <div className="panel-body">
+                        <div>
+                            <div className="form-group">
+                                <input type="text"
+                                    name="username"
+                                    className="form-control"
+                                    placeholder="请输入用户名" 
+                                    onKeyUp={e => this.onInputKeyUp(e)}
+                                    onChange={e => this.onInputChange(e)}/>
+                            </div>
+                            <div className="form-group">
+                                <input type="password" 
+                                    name="password"
+                                    className="form-control" 
+                                    placeholder="请输入密码" 
+                                    onKeyUp={e => this.onInputKeyUp(e)}
+                                    onChange={e => this.onInputChange(e)}/>
+                            </div>
+                            <button className="btn btn-lg btn-primary btn-block"
+                                onClick={e => {this.onSubmit(e)}}>登录</button>
                         </div>
                     </div>
                 </div>
             </div>
+                    
         );
     }
-});
+}
 
 export default Login;

@@ -1,114 +1,110 @@
-'use strict';
+/*
+* @Author: Rosen
+* @Date:   2018-02-04 21:34:16
+* @Last Modified by:   Rosen
+* @Last Modified time: 2018-02-04 22:49:58
+*/
 import React        from 'react';
-import ReactDOM     from 'react-dom';
-import { Link }     from 'react-router';
+import { Link }     from 'react-router-dom';
+import MUtil        from 'util/mm.jsx'
+import Product      from 'service/product-service.jsx'
 
-import './index.scss';
-import MMUtile      from 'util/mm.jsx';
 import PageTitle    from 'component/page-title/index.jsx';
+import TableList    from 'util/table-list/index.jsx';
 
-import Product      from 'service/product.jsx';
+const _mm           = new MUtil();
+const _product      = new Product();
 
-const _mm = new MMUtile();
-const _product  = new Product();
-
-const ProductCategory = React.createClass({
-    getInitialState() {
-        return {
-            parentCategoryId    : this.props.params.categoryId || 0,
-            categoryList        : []
+class CategoryList extends React.Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            list                : [],
+            parentCategoryId    : this.props.match.params.categoryId || 0
         };
-    },
+    }
     componentDidMount(){
-        this.initCategory(this.state.parentCategoryId);
-    },
-    componentDidUpdate(prevProps){
+        this.loadCategoryList();
+    }
+    componentDidUpdate(prevProps, prevState){
         let oldPath = prevProps.location.pathname,
             newPath = this.props.location.pathname,
-            newId   = this.props.params.categoryId || 0;
+            newId   = this.props.match.params.categoryId || 0;
         if(oldPath !== newPath){
-            this.initCategory(newId);
-        }   
-    },
-    initCategory(categoryId){
-        // 按父id查询对应的品类
-        _product.getCategory(categoryId).then(res => {
             this.setState({
-                parentCategoryId : categoryId,
-                categoryList: res
+                parentCategoryId : newId
+            }, () => {
+                this.loadCategoryList();
+            });
+        }
+    }
+    // 加载品类列表
+    loadCategoryList(){
+        _product.getCategoryList(this.state.parentCategoryId).then(res => {
+            this.setState({
+                list : res
             });
         }, errMsg => {
+            this.setState({
+                list : []
+            });
             _mm.errorTips(errMsg);
         });
-    },
+    }
+    // 更新品类的名字
     onUpdateName(categoryId, categoryName){
-        let newName = window.prompt("请输入新的品类名称", categoryName); 
+        let newName = window.prompt('请输入新的品类名称', categoryName);
         if(newName){
-            // 更新
             _product.updateCategoryName({
-                categoryId : categoryId,
+                categoryId: categoryId,
                 categoryName : newName
             }).then(res => {
                 _mm.successTips(res);
-                this.initCategory(this.state.parentCategoryId);
+                this.loadCategoryList();
             }, errMsg => {
                 _mm.errorTips(errMsg);
             });
-        }else{
-            _mm.errorTips('请输入正确的品类名称');
         }
-    },
-    render() {
+    }
+    render(){
+        let listBody = this.state.list.map((category, index) => {
+            return (
+                <tr key={index}>
+                    <td>{category.id}</td>
+                    <td>{category.name}</td>
+                    <td>
+                        <a className="opear"
+                            onClick={(e) => this.onUpdateName(category.id, category.name)}>修改名称</a>
+                        {
+                            category.parentId === 0
+                            ? <Link to={`/product-category/index/${category.id}`}>查看子品类</Link>
+                            : null
+                        }
+                    </td> 
+                </tr>
+            );
+        });
         return (
             <div id="page-wrapper">
-                <PageTitle pageTitle="品类管理">
+                <PageTitle title="品类列表">
                     <div className="page-header-right">
-                        <Link className="btn btn-primary" to="/product.category/add">
-                            <i className="fa fa-plus fa-fw"></i>
+                        <Link to="/product-category/add" className="btn btn-primary">
+                            <i className="fa fa-plus"></i>
                             <span>添加品类</span>
                         </Link>
                     </div>
                 </PageTitle>
                 <div className="row">
-                    <div className="col-lg-12">
-                        <p>当前商品分类ID：{this.state.parentCategoryId}</p>
-                    </div>
-                    <div className="table-wrap col-lg-12">
-                        <table className="table table-striped table-bordered table-hover">
-                            <thead>
-                                <tr>
-                                    <th>品类ID</th>
-                                    <th>品类名称</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {
-                                this.state.categoryList.map((category, index) => {
-                                    return (
-                                        <tr key={index}>
-                                            <td>{category.id}</td>
-                                            <td>
-                                                <span>{category.name}</span>
-                                            </td>
-                                            <td>
-                                            <a className="opera" onClick={this.onUpdateName.bind(this, category.id, category.name)}>修改名称</a>
-                                            {category.parentId == 0 ? 
-                                                <Link to={'/product.category/index/' + category.id} className="opera">查看其子品类</Link>
-                                                : null
-                                            }
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            }
-                            </tbody>
-                        </table>
+                    <div className="col-md-12">
+                        <p>父品类ID: {this.state.parentCategoryId}</p>
                     </div>
                 </div>
+                <TableList tableHeads={['品类ID', '品类名称', '操作']}>
+                    {listBody}
+                </TableList>
             </div>
         );
     }
-});
+}
 
-export default ProductCategory;
+export default CategoryList;
