@@ -23,7 +23,7 @@ class Login extends React.Component{
         }
     }
     componentWillMount(){
-        document.title = '登录 - MMALL ADMIN';
+        document.title = '登录 - MrPei-MALL ADMIN';
     }
     // 当用户名发生改变
     onInputChange(e){
@@ -64,7 +64,7 @@ class Login extends React.Component{
         return (
             <div className="col-md-4 col-md-offset-4">
                 <div className="panel panel-default login-panel">
-                    <div className="panel-heading">欢迎登录 - MMALL管理系统</div>
+                    <div className="panel-heading">欢迎登录 - MrPei-MALL管理系统</div>
                     <div className="panel-body">
                         <div>
                             <div className="form-group">
